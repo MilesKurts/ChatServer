@@ -9,74 +9,74 @@ using System.Threading.Tasks;
 
 namespace ChatServer
 {
-    //Classe trata as conexoes. serao tantas quanto as instancias do usuarios conectados
+    // Esta classe trata as conexões, serão tantas quanto as instâncias do usuários conectados
     class Conexao
     {
-        TcpClient tcpClient;
+        TcpClient tcpCliente;
 
-        //a thread que ira enviar a informação para o cliente
-
+        // A thread que ira enviar a informação para o cliente
         private Thread thrSender;
         private StreamReader srReceptor;
         private StreamWriter swEnviador;
         private string usuarioAtual;
         private string strResposta;
 
-
-        //o construtor da classe que toma conexao TCP
+        // O construtor da classe que que toma a conexão TCP
         public Conexao(TcpClient tcpCon)
         {
-            tcpClient = tcpCon;
-            //a thread que aceita o cliente e espera mensagem
-
+            tcpCliente = tcpCon;
+            // A thread que aceita o cliente e espera a mensagem
             thrSender = new Thread(AceitaCliente);
             thrSender.IsBackground = true;
-            //a thread chama o método AceitaCliente
+            // A thread chama o método AceitaCliente()
             thrSender.Start();
         }
 
         private void FechaConexao()
         {
-            //fecha os objetos abertos
-            tcpClient.Close();
+            // Fecha os objetos abertos
+            tcpCliente.Close();
             srReceptor.Close();
             swEnviador.Close();
         }
+
+        // Ocorre quando um novo cliente é aceito
         private void AceitaCliente()
         {
-            srReceptor = new StreamReader(tcpClient.GetStream());
-            swEnviador = new StreamWriter(tcpClient.GetStream());
+            srReceptor = new StreamReader(tcpCliente.GetStream());
+            swEnviador = new StreamWriter(tcpCliente.GetStream());
 
-            //le as informações da conta do cliente
+            // Lê a informação da conta do cliente
             usuarioAtual = srReceptor.ReadLine();
 
-            //temos uma resposta do cliente
+            // temos uma resposta do cliente
             if (usuarioAtual != "")
             {
-                //armazena o nome do usuario na hash table
+                // Armazena o nome do usuário na hash table
                 if (Servidor.htUsuarios.Contains(usuarioAtual))
                 {
-                    //0=> significa não conectado
-                    swEnviador.WriteLine("0| Este usuario ja existe.");
+                    // 0 => significa não conectado
+                    swEnviador.WriteLine("0|Este nome de usuário já existe.");
                     swEnviador.Flush();
-                    FechaConexao(); ;
+                    FechaConexao();
                     return;
-                }else if(usuarioAtual == "Administrador")
+                }
+                else if (usuarioAtual == "Administrator")
                 {
-                    //0 => não conectado
+                    // 0 => não conectado
                     swEnviador.WriteLine("0|Este nome de usuário é reservado.");
                     swEnviador.Flush();
-                    FechaConexao(); return;
+                    FechaConexao();
+                    return;
                 }
                 else
                 {
-                    //1=> conectou com sucesso
+                    // 1 => conectou com sucesso
                     swEnviador.WriteLine("1");
                     swEnviador.Flush();
 
-                    //inclui o usuário na hash table e inicia a escuta de suas mensagens
-                    Servidor.IncluirUsuario(tcpClient,usuarioAtual);
-
+                    // Inclui o usuário na hash table e inicia a escuta de suas mensagens
+                    Servidor.IncluiUsuario(tcpCliente, usuarioAtual);
                 }
             }
             else
@@ -84,28 +84,28 @@ namespace ChatServer
                 FechaConexao();
                 return;
             }
+
             try
             {
-                //continua aguardando msg do usuário
-                while ((strResposta = srReceptor.ReadLine()) != "") ;
+                // Continua aguardando por uma mensagem do usuário
+                while ((strResposta = srReceptor.ReadLine()) != "")
                 {
-                    //se for invalido remove-o
-                    if(strResposta ==null){
-                        Servidor.RemoveUsuario(tcpClient);
-                    
-                }
+                    // Se for inválido remove-o
+                    if (strResposta == null)
+                    {
+                        Servidor.RemoveUsuario(tcpCliente);
+                    }
                     else
                     {
-                        //envia msg para todos os outros usuarios
+                        // envia a mensagem para todos os outros usuários
                         Servidor.EnviaMensagem(usuarioAtual, strResposta);
                     }
                 }
             }
-            catch (Exception ex)
+            catch
             {
-                //se houve um problema com esse usuário desconecta-o
-                Servidor.RemoveUsuario(tcpClient);
-
+                // Se houve um problema com este usuário desconecta-o
+                Servidor.RemoveUsuario(tcpCliente);
             }
         }
     }
